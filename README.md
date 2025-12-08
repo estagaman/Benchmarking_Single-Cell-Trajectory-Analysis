@@ -1,4 +1,4 @@
-### Benchmarking Tools for Single-Cell Trajectory Analysis
+# Benchmarking Tools for Single-Cell Trajectory Analysis
 
 ## Introduction: 
 
