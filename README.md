@@ -95,6 +95,16 @@ Output:
   - stats_{file_ID}.csv: time and memory usage statistics for each dataset
   - pseudotime_{file_ID}.csv: pseudotime assignments for each dataset
 
+## Calculating Differentially Expressed Genes Across Pseudotime
+
+For the purpose of continuity between tools, pseudotime results from all tools were tested for differentially expressed genes using the StartVsEndTest() from tradeSeq R package. Code is available for this in tradeseq_start_end.R 
+
+Results of each tool must be run individually in tradeSeq, with parameters adjusted 
+
+To run Monocle results: 
+
+
+
 ## Generating Benchmarking Results 
 
 The following section is ordered according to the figures in my benchmarking paper results: 
@@ -218,7 +228,7 @@ check <- "cell_type"
 
 ```
 
-Parameter check should be set to "cell_type" for global dropout datasets. 
+Parameter check should be set to "cell_type" for cell-type-specific dropout datasets. 
 
 The final plot for Figure 3a is called "cell_type_default_scatter.png", located inside the specified output directory.
 
@@ -230,6 +240,6 @@ check <- "cell_type"
 
 ```
 
-Parameter check should be set to "cell_type" for global dropout datasets. 
+Parameter check should be set to "cell_type" for cell-type-specific dropout datasets. 
 
 The final plot for Figure 3b is called "default_prec_recallcell_type.png", located inside the specified output directory.
