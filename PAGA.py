@@ -13,7 +13,7 @@ import os
 import tracemalloc
 
 #specify your output directory name
-out_dir = "/home/estagaman/benchmarking_project/test_simulated_data/PAGA_out_ica_30"
+out_dir = "/home/estagaman/benchmarking_project/test_simulated_data/PAGA_out_umap"
 
 #specify the unique element in each of your filenames
 #for example, my simulated data filenames are formatted like so: "seurat_glob1.h5ad", "seurat_glob2.h5ad", "seurat_5.h5ad" 
