@@ -10,7 +10,7 @@ library("tradeSeq")
 data_dir = "/home/estagaman/benchmarking_project/data/trajectory/with_DE_genes/seurat/"
 
 #specify desired output directory
-out_dir = "/home/estagaman/benchmarking_project/test_simulated_data/slingshot_out_umap/"
+out_dir = "/home/estagaman/benchmarking_project/test_simulated_data/slingshot_umap/"
 
 #specify the unique identifier within each input file name 
 #in this case, my simulated files are formatted like so: "seurat_glob1.rds", "seurat_glob2.rds", "seurat_1.rds"
