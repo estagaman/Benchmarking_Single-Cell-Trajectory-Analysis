@@ -5,18 +5,47 @@
 Today, single-cell RNA-sequencing allows for profiling of gene expression in thousands of cells simultaneously. Single-cell trajectory analysis tools aim to situate these cells within a time course, inferring cell differentiation and evolutionary processes. However, data at single-cell resolution presents unique obstacles, particularly low counts, dropouts, and cell-type-specific biological effects. In this study, I test the efficiency of common trajectory analysis tools, including Monocle2, Slingshot, and PAGA, as well as their robustness to both global and cell-type-specific dropouts. Analysis reveals that both PAGA and Slingshot more accurately infer true pseudotime in the presence of moderate, global dropout rates. These tools also required only 0-4 minutes to execute cell ordering, whereas Monocle2 required more than 20 seconds total. 
 However, Monocle2 performed more consistently with severe, cell-type-specific sparsity and showed up to twice as much sensitivity in identifying differentially expressed genes. This implies that improvements upon the original minimum-spanning-tree based algorithms used by Monocle, including principal curve smoothing, clustering-based approaches, and connectivity graphing, improve efficiency, but not necessarily accuracy or sensitivity in the presence of noise. Future single-cell analysis tools may combine Monocle2’s advantages in precision, recall, and noise handling with the computational efficiency of PAGA and Slingshot. Currently, recommended trajectory analysis tools depends on the needs of the particular datasets, amount of dropout heterogeneity, computational resources, and specific research question. 
 
+## Required Software: 
+
+R: version 3.0 or later
+    * download link: https://www.r-project.org 
+
+Python: version 3.9 or later
+    * download link: https://www.python.org/downloads/
+
+Anaconda/Miniconda: 
+    * download link: [https://www.python.org/downloads/](https://docs.conda.io/projects/conda/en/stable/user-guide/install/index.html)
+
+### Required R packages: 
+    * Bioconductor
+    * tidyverse
+    * monocle (version 2.0+)
+    * splatter
+    * dplyr
+    * Seurat
+    * patchwork
+    * reshape
+    * SeuratDisk
+    * slingshot
+    * tradeSeq
+    * profmem
+    * igraph
+    * ggplot2
+    * patchwork
+  
+### Required Python modules: 
+    * pandas
+    * numpy
+    * matplotlib
+    * scanpy (must be activated in conda environment to run PAGA)
+    * scipy
+    * time
+    * os
+    * tracemalloc
 
 ## How to Simulate Data: 
 
 All data simulation code for this project is included in script data_simulation.R
-
-Necessary R packages include: 
-  - Splatter
-  - Seurat
-  - Monocle
-  - SeuratDisk
-  - tidyverse
-  - dplyr
 
 ## Running Each Tool:
 
