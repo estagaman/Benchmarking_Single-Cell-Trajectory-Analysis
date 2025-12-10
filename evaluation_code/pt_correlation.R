@@ -1,56 +1,62 @@
 #measure the correlation between actual pseudotime and assigned pseudotime by the tool 
 
+#load necessary libraries for plotting
 library(patchwork)
 library(ggplot2)
 
-#which tool would we like to assess? put its output folder here
+#first, we need to specify output folder for each tool's results and the name of the files containing pseudotime assignments
 
 #Monocle
-monocle_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/monocle_DDR_mem"
-monocle_prefix = "results_"
+monocle_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/monocle_DDR"
+monocle_prefix = "pseudotime_"
 
 #PAGA
-PAGA_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/PAGA_out_umap_30/seurat"
+PAGA_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/PAGA_umap"
 PAGA_prefix = "pseudotime_"
 
 #Slingshot
-Slingshot_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/slingshot_out_umap"
-Slingshot_prefix = "pseudotime"
+Slingshot_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/slingshot_umap"
+Slingshot_prefix = "pseudotime_"
 
 #do we want to look at global dropouts or cell-type-specific dropouts?
 check <- "cell_type"
 
-#specify output folder
+#specify output folder to save results
 out_dir <- "/home/estagaman/benchmarking_project/test_simulated_data/correlation_results"
 
+#give path to seurat object with no dropouts added: 
+original_seurat_object_path <- "/home/estagaman/benchmarking_project/data/trajectory/with_DE_genes/seurat/seurat_1.rds"
+
+#this tells which files to analyze and plot based on whether you are checking global or cell-type-specific dropouts
 if (check == "global"){
 
-    file_list <- c("1", "glob1", "glob2", "glob3", "glob4", "glob5", "glob6")
-    labels <- c("no dropout", "0.25 dropout", "0.5 dropout", "0.75 dropout", "1 dropout", "1.25 dropout", "1.5 dropout")
+    file_list <- c("1", "glob1", "glob2", "glob3", "glob4", "glob5", "glob6") #change these if files named differently
+    labels <- c("no dropout", "0.25 dropout", "0.5 dropout", "0.75 dropout", "1 dropout", "1.25 dropout", "1.5 dropout") #change these if dropout rates are different
 
 } else if (check == "cell_type"){
 
-    file_list <- c("1", "2", "3", "4", "5", "6")
-    labels <- c("no dropout", "[0.1, 0.15, 0.2, 0.25]", "[0.5, 1, 1.25, 1.5]", "[1, 1.25, 1.5, 1.75]", "[1.5, 1.75, 2, 2.25]", "[0.1, 0.3, 0.5, 0.7]")
+    file_list <- c("1", "2", "3", "4", "5", "6") #change this if files named differently
+    labels <- c("no dropout", "[0.1, 0.15, 0.2, 0.25]", "[0.5, 1, 1.25, 1.5]", "[1, 1.25, 1.5, 1.75]", "[1.5, 1.75, 2, 2.25]", "[0.1, 0.3, 0.5, 0.7]") #change these if dropout rates per file are different
 
 }
 
-#step 1: load in the actual pseudotime information
+### USER INPUT DONE ###
+
+#step 1: load in the true pseudotime information per cell
 
 #we're going to do this with the Seurat object 
-original_object <- readRDS("/home/estagaman/benchmarking_project/data/trajectory/with_DE_genes/seurat/seurat_1.rds")
+original_object <- readRDS(original_seurat_object_path)
 
 #use the metadata to find true pseudotime 
 true_pseudotime <- original_object@meta.data$pseudotime
 
-#step 2, for each file, compute pearson correlation coefficient
+#step 2: for each file, compute pearson correlation coefficient between true and inferred pseudotime
+find_cor <- function(file_list, prefix, results_folder, col_name){ #takes in list of file identifiers to test, prefix for the file, folder we're extracting from, and name of pseudotime column
 
-find_cor <- function(file_list, prefix, results_folder, col_name){
+    cor_values <- c() #create empty list for r correlation coefficients
+    plot_list <- list() #create empty list for plots
 
-    cor_values <- c()
-    plot_list <- list()
-
-    for (file in file_list){
+    for (file in file_list){ #for each file testing
 
         #read in the results file
         res <- read.csv(paste0(results_folder, "/", prefix, file, ".csv"))
@@ -58,7 +64,7 @@ find_cor <- function(file_list, prefix, results_folder, col_name){
         #get the inferred pseudotime
         inferred_pseudotime <- res[[col_name]]
 
-        #calculate the pearson correlation
+        #calculate the pearson correlation between true and inferred
         cor_coef <- cor(true_pseudotime, inferred_pseudotime, method = "pearson")
 
         #add this to our list of coefficients
@@ -70,23 +76,24 @@ find_cor <- function(file_list, prefix, results_folder, col_name){
         #create a scatterplot
         plot <- ggplot(data = cor_df, aes(x = true, y = inferred)) + 
                 geom_point(color = "darkblue") +
-                annotate("text",
-                    x = Inf, y = -Inf,         # bottom-right corner
-                    label = paste0("r = ", round(cor_coef, 3)),
-                    hjust = 1.1, vjust = -0.5, # adjust inward
-                    size = 7
+                annotate("text", #adding in the r correlation coefficient to the plot
+                    x = Inf, y = -Inf,# bottom-right corner
+                    label = paste0("r = ", round(cor_coef, 3)),#round r to 3 decimal points
+                    hjust = 1.1, vjust = -0.5, # adjust the position
+                    size = 7 #make it size 7 so it's readable but not too big
                 ) + 
-                theme(aspect.ratio = 1)
+                theme(aspect.ratio = 1) #make each plot a square
     
         #add this to our list of plots
         plot_list <- append(plot_list, list(plot))
     }
 
+    #return this list of plots and correlation coefficients
     return(list(plot_list, cor_values))
 
 }
 
-#initialize correlation df
+#initialize dataframe of correlation coefficients for each method
 correlation_df <- data.frame(placeholder = c(rep(NA, length(file_list))), row.names = labels)
 
 #run results for monocle
@@ -94,7 +101,7 @@ monocle_results <- find_cor(file_list, monocle_prefix, monocle_folder, "Pseudoti
 correlation_df$monocle = monocle_results[[2]]
 
 #now we can make a plot with all the scatterplots combined together
-monocle_scatter <- wrap_plots(monocle_results[[1]], ncol = 6)
+monocle_scatter <- wrap_plots(monocle_results[[1]], ncol = length(labels))
 
 #save monocle scatterplots
 ggsave(paste0(out_dir, "/monocle_DDR_scatter.png"), monocle_scatter, height = 5, width = 30)
@@ -105,7 +112,7 @@ PAGA_results <- find_cor(file_list, PAGA_prefix, PAGA_folder, "dpt_pseudotime")
 correlation_df$PAGA = PAGA_results[[2]]
 
 #now we can make a plot with all the scatterplots combined together
-paga_scatter <- wrap_plots(PAGA_results[[1]], ncol = 6)
+paga_scatter <- wrap_plots(PAGA_results[[1]], ncol = length(labels))
 
 #save monocle scatterplots
 ggsave(paste0(out_dir, "/PAGA_umap_scatter.png"), paga_scatter, height = 5, width = 30)
@@ -115,14 +122,17 @@ SS_results <- find_cor(file_list, Slingshot_prefix, Slingshot_folder, "Lineage1"
 correlation_df$Slingshot = SS_results[[2]]
 
 #now we can make a plot with all the scatterplots combined together
-ss_scatter <- wrap_plots(SS_results[[1]], ncol = 6)
+ss_scatter <- wrap_plots(SS_results[[1]], ncol = length(labels))
 
-#save monocle scatterplots
+#save slingshot scatterplots
 ggsave(paste0(out_dir, "/Slingshot_umap_scatter.png"), ss_scatter, height = 5, width = 30)
 
+#write results to final dataframe of correlations
 correlation_df$placeholder = NULL
-write.csv(correlation_df, paste0(out_dir, "/cor_values_", "global_default.csv"))
+write.csv(correlation_df, paste0(out_dir, "/cor_values_", check,"_default.csv"))
 
+#combine plots together into a final plot
 final_plot <- monocle_scatter / paga_scatter / ss_scatter
 
-ggsave(paste0(out_dir, "/cell_type_default_scatter.png"), final_plot, height = 15, width = 30)
+#save the final plot
+ggsave(paste0(out_dir, "/", check, "_default_scatter.png"), final_plot, height = 15, width = 30)
