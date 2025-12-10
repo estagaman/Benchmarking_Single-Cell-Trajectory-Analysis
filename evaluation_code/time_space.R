@@ -97,3 +97,6 @@ time_plot <- ggplot(full_df, aes(x = factor(dataset, levels = labels), y = time,
 
 #save the plot
 ggsave(paste0(out_dir, "/time_space_", check, "_default.png"), memory_plot + time_plot, width = 20, height = 5)
+
+#save the statistics in a csv
+write.csv(full_df, paste0(out_dir, "/time_space_", check, "_default.csv")
