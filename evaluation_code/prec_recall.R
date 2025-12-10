@@ -1,21 +1,22 @@
 library(patchwork)
 library(ggplot2)
 
-#Monocle
-monocle_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/monocle_DDR_mem"
-#monocle_prefix = "DEG_"
-monocle_prefix = "pseudotime_DEse3"
+#folder with monocle results, and beginning of filenames with differential expression results
+monocle_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/monocle_DDR"
+monocle_prefix = "pseudotime_DE"
 
-#PAGA
-PAGA_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/PAGA_out_umap_30/seurat"
-PAGA_prefix = "pseudotime_DEse3" #using the start vs end test
+#folder with monocle results, and beginning of filenames with differential expression results
+PAGA_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/PAGA_umap"
+PAGA_prefix = "pseudotime_DE" #using the start vs end test
 
-#Slingshot
-Slingshot_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/slingshot_out_umap"
-Slingshot_prefix = "pseudotime_DEse3"
+#folder with monocle results, and beginning of filenames with differential expression results
+Slingshot_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/slingshot_umap"
+Slingshot_prefix = "pseudotime_DE"
 
 #do we want to look at global dropouts or cell-type-specific dropouts?
 check <- "cell_type"
+
+#do we want to use p-value or FDR-corrected p-value as the threshold?
 threshold <- "pvalue"
 
 #specify output folder
@@ -24,6 +25,7 @@ out_dir <- "/home/estagaman/benchmarking_project/test_simulated_data/prec_recall
 #load in the true DE genes
 DE_genes <- read.csv("/home/estagaman/benchmarking_project/data/trajectory/with_DE_genes/feature_info.csv")
 
+#choose which files to load and which dropout settings depending on whether we want global or cell-type-specific dropouts
 if (check == "global"){
 
     file_list <- c("1", "glob1", "glob2", "glob3", "glob4", "glob5", "glob6")
@@ -36,29 +38,32 @@ if (check == "global"){
 
 }
 
+#calculate precision and recall using this function
 calculate_metrics <- function(file_list, prefix, results_folder, method){
 
+    #create an empty dataframe with statistics
     stats_df <- data.frame(precision = c(), recall = c(), method = c())
 
+    #for each file we're checking:
     for (file in file_list){
 
         #read in the results file
         res <- read.csv(paste0(results_folder, "/", prefix, file, ".csv"))
 
         #make a vector of values TRUE and FALSE that show whether a feature was identified as differentially expressed or not
-
-        if (threshold == "fdr"){
-            if ("DE" %in% colnames(res)){
+        if (threshold == "fdr"){ #pull from FDR column if that's the chosen threshodl
+            if ("DE" %in% colnames(res)){ #if the table already has a column DE just use that
                 DE_inferred = res$DE == "DE"
-            } else {
+            } else { #if not use column FDR and check if below alpha of 0.05
                 DE_inferred <- ifelse(is.na(res$fdr), FALSE, res$fdr < 0.05)
             }
         } else if (threshold == "pvalue"){ #if we're using pvalue threshold
-            if ("pvalue" %in% colnames(res)){
-                DE_inferred = res$pvalue < 0.05
+            if ("pvalue" %in% colnames(res)){ #make sure pvalue is a column name
+                DE_inferred = res$pvalue < 0.05 #check if below 0.05
             }
         }
 
+        #convert to factor of all TRUE or FALSE
         DE_inferred <- factor(DE_inferred, levels = c(FALSE, TRUE))
         DE_truth <- factor(DE_genes$DE, levels = c(FALSE, TRUE))
 
@@ -70,31 +75,42 @@ calculate_metrics <- function(file_list, prefix, results_folder, method){
         false_neg <- outcome_table["FALSE", "TRUE"]
         true_neg <- outcome_table["FALSE", "FALSE"]
 
+        #calculate precision and recall
         precision = true_pos / (true_pos + false_pos)
         recall = true_pos / (true_pos + false_neg)
 
+        #collect these statistics in a data frame
         stats_intermediate_df <- data.frame(precision = precision, recall = recall, method = method)
 
+        #bind all the statistics from the same tool together
         stats_df <- rbind(stats_df, stats_intermediate_df)
     }
 
+    #include the dropout rate in the "dataset" column
     stats_df$dataset = labels
 
     return(stats_df)
 }
 
+#initialize data frame for results
 stats_df <- data.frame(precision = c(), recall = c(), method = c())
 
+#PAGA results
 PAGA_df <- calculate_metrics(file_list, PAGA_prefix, PAGA_folder, method = "PAGA_umap") # nolint: line_length_linter.
 
+#Monocle results
 monocle_df <- calculate_metrics(file_list, monocle_prefix, monocle_folder, method = "monocle_ddr") # nolint: line_length_linter.
 
+#Slingshot results
 slingshot_df <- calculate_metrics(file_list, Slingshot_prefix, Slingshot_folder, method = "slingshot_umap")
 
+#combine together
 full_df <- rbind(stats_df, PAGA_df, monocle_df, slingshot_df)
 
+#any NAs because of 0/0 should be 0
 full_df[is.na(full_df)] <- 0
 
+#create a list of precision and recall plots
 plot_list = list()
 
 #for each simulated dataset:
@@ -124,7 +140,5 @@ all_scatter <- wrap_plots(plot_list, ncol = length(file_list)) & theme(legend.po
 
 all_scatter <- all_scatter + plot_layout(guides = "collect")
 
-#save monocle scatterplots
-ggsave(paste0(out_dir, "/default_celltype_SvE3_zoom.png"), all_scatter, height = 5, width = 30)
-
-#this works but I want to remove the legend and do it manually
+#save scatterplots
+ggsave(paste0(out_dir, "/default_prec_recall", check, ".png"), all_scatter, height = 5, width = 30)
