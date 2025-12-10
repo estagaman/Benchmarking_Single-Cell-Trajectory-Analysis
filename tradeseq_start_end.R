@@ -1,7 +1,12 @@
+#load necessary packages
 library("tradeSeq")
 library("monocle")
 
+#give directory where original CellDataSets were stored for Monocle specifically
 data_dir = "/home/estagaman/benchmarking_project/data/trajectory/with_DE_genes/CDS"
+
+#give output directory where pseudotime assignments were saved for the tool you're testing
+#options based on previous code: monocle_DDR, PAGA_umap, or slingshot_umap
 out_dir = "/home/estagaman/benchmarking_project/test_simulated_data/monocle_DDR_mem"
 
 file_prefix = "/results_"
