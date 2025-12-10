@@ -75,11 +75,9 @@ for i in file_list:
     pseudotime_values = adata.obs[["pseudotime", "dpt_pseudotime"]]
 
     #save the assigned pseudotime values to a csv with column "dpt_pseudotime"
-    seurat_file = os.path.join(out_dir, "pseudotime_" + i + ".csv")
-    pseudotime_values.to_csv(seurat_file, index=True)
+    pseudotime_values.to_csv(out_dir + "pseudotime_" + i + ".csv", index=True)
 
     #save time and space complexity
     seurat_time = seurat_end_time - seurat_start_time 
     time_space_seurat = pd.DataFrame({"ordering_time": [seurat_time], "memory": [total_memory_seurat]})
-    seurat_path = os.path.join(out_dir, "stats_" + i + ".csv")
-    time_space_seurat.to_csv(seurat_path)
+    time_space_seurat.to_csv(out_dir + "stats_" + i + ".csv")
