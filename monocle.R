@@ -1,123 +1,90 @@
 #!/usr/bin/env Rscript
+
+#load necessary packages
 library(monocle)
 library(igraph)
 library(reshape)
 library(profmem)
 
+#directory where CellDataSets are stored with cells you would like to order
 data_dir <- "/home/estagaman/benchmarking_project/data/trajectory/with_DE_genes/CDS"
 
 #directory to save all files/results to
 out_dir <- "/home/estagaman/benchmarking_project/test_simulated_data/monocle_ICA_mem_1end"
 
+#set a seed for reproducibility
 set.seed(123)
 
-#check the first to make sure it's normal
-#cds_object <- readRDS(paste0(data_dir, "/cds1.rds"))
-
-#es.mef <- cds_object
-
-#do quality control
-#L <- log10(exprs(es.mef)+1)
-#L[L==0] <- NA
-#melted.dens.df <- reshape::melt(t(scale(t(L))))
-
-#check_plot <- qplot(value, geom = 'density', data = melted.dens.df) + stat_function(fun = dnorm, size = 0.5, color = 'red') + xlab('Standardized log(Expression)') + ylab('Density')
-
-#ggsave(paste0(out_dir, "/check_QC.png"), check_plot)
-
-#if I need to do filtering, use this code:
-#es.mef <- detectGenes(es.mef, min_expr = 10)
-
-#expressed.genes <- rownames(fData(es.mef))[fData(es.mef)$num_cells_expressed >= 100]
-#es.mef <- es.mef[expressed.genes, ]
-
-
-#for running each individually
-
-#i_options <- c("_glob1", "_glob2", "_glob3", "_glob4", "_glob5", "_glob6", "1", "2", "3", "4", "5", "6")
-
-#es.mef <- readRDS(paste0(data_dir, "/cds", i_options[1], ".rds"))
-
-#pseudotime_ordering(es.mef, i, out_dir)
-
-#num = i_options[1]
-
 #ok. now we create a loop for the pseudotime ordering
-pseudotime_ordering <- function(es.mef, num, out_dir){
+pseudotime_ordering <- function(es.mef, num, out_dir){ #takes in cell data set, the identifier of the specific file we're analyzing, and output directory
 
-    fData(es.mef)$gene_short_name <- rownames(es.mef) #add column with gene name to feature data
+    #add column with gene name to feature data
+    fData(es.mef)$gene_short_name <- rownames(es.mef) 
 
+    #estimate library sizes
     es.mef <- estimateSizeFactors(es.mef) #estimate library sizes
 
-    es.mef <- reduceDimension(es.mef, reduction_method = "ICA") # Reduce dimensionality - this can take a long time
+    # Reduce dimensionality - this can take a long time
+    es.mef <- reduceDimension(es.mef, reduction_method = "DDRTree") 
 
     #run order cells once
-    ordered_1_start <- Sys.time()
+    ordered_1_start <- Sys.time() #start timer
 
-    p_1 <- profmem({
+    p_1 <- profmem({ #use profmem to record memory usage
         es.mef.test <- orderCells(es.mef, reverse = F)
     })
 
-    ordered_1_end <- Sys.time()
+    ordered_1_end <- Sys.time() #end timer
 
     #to find the root state
-    just_first_10 <- subset(pData(es.mef.test), pseudotime < 10)
-    states_counted <- table(just_first_10$State)
+    just_first_10 <- subset(pData(es.mef.test), pseudotime < 10) #isolate the cells from the first 10% of true pseudotime
+    states_counted <- table(just_first_10$State) #find the clusters/states that contain those cells
 
-    max_frequency_index <- which.max(states_counted)
-    most_common_state <- names(states_counted[max_frequency_index])
+    max_frequency_index <- which.max(states_counted) #find the cluster containing the highest frequency of the selected cells
+    most_common_state <- names(states_counted[max_frequency_index]) #this is our root cluster
 
-    root_chosen = most_common_state
+    root_chosen = most_common_state #this is our root cluster
 
-    ordered_2_start <- Sys.time()
+    ordered_2_start <- Sys.time() #start timer again
 
     p_2 <- profmem({ #ordering cells while measuring memory allocation
 
-        es.mef <- orderCells(es.mef.test, reverse = F, root_state = root_chosen, num_paths = 1)
+        #order cells again, but specify the root state to begin trajectory from
+        es.mef <- orderCells(es.mef.test, reverse = F, root_state = root_chosen)
 
     })
 
-    ordered_2_end <- Sys.time()
+    ordered_2_end <- Sys.time() #stop the timer
 
+    #compute total ordering time
     final_ordering_time <- (ordered_2_end - ordered_2_start) + (ordered_1_end - ordered_1_start)
 
+    #compute maximum memory usage between the two runs of orderCells()
     total_bytes <- max(c(sum(as.numeric(p_1$bytes), na.rm = TRUE), sum(as.numeric(p_2$bytes), na.rm = TRUE)))
 
+    #plot the cell trajectory
     tree <- plot_cell_trajectory(es.mef, color_by = "pseudotime") # Plot trajectory, color it by the ground truth pseudotime
 
+    #save the plot if you want to view the trajectory
     ggsave(paste0(out_dir, "/tree_", num, ".png"), tree)
 
-    #I want to extract the pseudotime assignments 
-    write.csv(pData(es.mef), paste0(out_dir, "/results_", num,".csv"))
-
-    #identify DE genes 
-    DEG_results <- differentialGeneTest(es.mef, fullModelFormulaStr = "~Pseudotime",
-        reducedModelFormulaStr = "~1", relative_expr = TRUE, cores = 1,
-        verbose = FALSE)
-
-    DE_str <- c()
-    
-    for (pval in DEG_results$pval){
-        if (pval < 0.05){
-            DE_str <- c(DE_str, "DE")
-        } else {
-            DE_str <- c(DE_str, "notDE")
-        }
-    }
-
-    DEG_results$DE <- DE_str
-
-    write.csv(DEG_results, paste0(out_dir, "/DEG_", num,".csv"))
+    #I want to extract the pseudotime assignments and save them to file pseudotime_ + identifier of the cell data set
+    write.csv(pData(es.mef), paste0(out_dir, "/pseudotime_", num,".csv"))
 
     #at the end, save all the time and space complexity info for each run
     stats_df <- data.frame("ordering_time" = final_ordering_time, "memory" = total_bytes)
 
+    #write to a csv
     write.csv(stats_df, paste0(out_dir, "/stats_", num, ".csv"))
 }
 
 #run pseudotime ordering for each simulated file, saving results to out_dir
+#this vector contains the unique part of each filename we want to test. If your files are named differentially than my simulated data, you would need to update these
 for (i in c("glob1", "glob2", "glob3", "glob4", "glob5", "glob6", "1", "2", "3", "4", "5", "6")){
+
+    #we know all files start in cds_ and end in .rds, so we just need to specify the middle section
     es.mef <- readRDS(paste0(data_dir, "/cds_", i, ".rds"))
 
+    #do the pseudotime ordering using function above
     pseudotime_ordering(es.mef, i, out_dir)
 }
