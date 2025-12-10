@@ -99,11 +99,22 @@ Output:
 
 For the purpose of continuity between tools, pseudotime results from all tools were tested for differentially expressed genes using the StartVsEndTest() from tradeSeq R package. Code is available for this in tradeseq_start_end.R 
 
-Results of each tool must be run individually in tradeSeq, with parameters adjusted 
+Results of each tool must be run individually in tradeSeq, with parameters out_dir and time_column adjusted like so: 
 
-To run Monocle results: 
+```{r}
+#specify the directory where your pseudotime results are stored for a particular tool 
+out_dir = "/home/estagaman/benchmarking_project/test_simulated_data/monocle_DDR"
 
+#give the prefix assigned to the csv with pseudotime values. If using my code, this should be "pseudotime_"
+file_prefix = "/pseudotime_"
 
+#give the column name where inferred pseudotime is stored. 
+time_column = "Pseudotime"
+    #for monocle: "Pseudotime"
+    #for PAGA: "dpt_pseudotime" 
+    #for slingshot: "Lineage"
+```
+Results will output to the out_dir specified, formatted as pseudotimeDE_{file_ID}.csv
 
 ## Generating Benchmarking Results 
 
