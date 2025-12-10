@@ -83,7 +83,7 @@ pseudotime_ordering <- function(es.mef, num, out_dir){ #takes in cell data set, 
 for (i in c("glob1", "glob2", "glob3", "glob4", "glob5", "glob6", "1", "2", "3", "4", "5", "6")){
 
     #we know all files start in cds_ and end in .rds, so we just need to specify the middle section
-    es.mef <- readRDS(paste0(data_dir, "/cds_", i, ".rds"))
+    es.mef <- readRDS(paste0(data_dir, "/cds_", i, ".rds")) #for example, if i is glob5, the filename accessed would be cds_glob5.rds. Change this to match your filename format
 
     #do the pseudotime ordering using function above
     pseudotime_ordering(es.mef, i, out_dir)
