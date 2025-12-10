@@ -10,7 +10,7 @@ library(profmem)
 data_dir <- "/home/estagaman/benchmarking_project/data/trajectory/with_DE_genes/CDS"
 
 #directory to save all files/results to
-out_dir <- "/home/estagaman/benchmarking_project/test_simulated_data/monocle_ICA_mem_1end"
+out_dir <- "/home/estagaman/benchmarking_project/test_simulated_data/monocle_DDR"
 
 #set a seed for reproducibility
 set.seed(123)
