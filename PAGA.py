@@ -20,11 +20,13 @@ out_dir = "/home/estagaman/benchmarking_project/test_simulated_data/PAGA_out_ica
 #in this case I only include the section between the underscore and dot, which is unique to each file
 file_list = ["glob1", "glob2", "glob3", "glob4", "glob5", "glob6", "1", "2", "3", "4", "5", "6"]
 
+data_dir = "/home/estagaman/benchmarking_project/data/trajectory/with_DE_genes/h5ad/"
+
 #for each file: 
 for i in file_list:
     
     #read in the data
-    adata = sc.read_h5ad("/home/estagaman/benchmarking_project/data/trajectory/with_DE_genes/h5ad/seurat_" + i + ".h5ad")
+    adata = sc.read_h5ad(data_dir + "seurat_" + i + ".h5ad") #if your filenames are formatted differently than this, change the "seurat_" section to your file prefix
 
     #identify the seurat cluster holding the beginning of pseudotime
     just_first_10 = adata.obs['pseudotime'] < 5 #look at cells with true pseudotime less than 5
