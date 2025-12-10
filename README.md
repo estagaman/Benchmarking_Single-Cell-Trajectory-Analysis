@@ -16,19 +16,189 @@ Necessary R packages include:
   - tidyverse
   - dplyr
 
-## Running Each Tool 
+## Running Each Tool:
 
 ### Tool #1: Monocle2 
 
-Code to run this tool is available in script Monocle2.R
+Code to run this tool is available in script Monocle.R
+
+Files used as input for this script should be in the same folder, data_dir, with filename structure "cds_{file_ID}.rds" where file_ID is a unique identifier for that dataset
 
 Input: 
-  - CellDataSet object including raw counts from scRNA-seq, saved as .rds file
-  - vector prefixes for each file (section that comes before ".rds" (if using my test data, keep prefixes the same
-  - desired output folder name
+  - data_dir: folder of CellDataSet objects, one for each dataset, including raw counts from scRNA-seq, saved as .rds file
+  - file_list: vector of identifiers (file_IDs) for each file (section of file name that comes before ".rds" (if using my simulated data, keep file_list the same)
+  - out_dir: desired output folder path
 
 Output: 
-  - Stats: time and memory usage statistics for each file
-  - 
+  - stats_{file_ID}.csv: time and memory usage statistics for each dataset
+  - pseudotime_{file_ID}.csv: pseudotime assignments for each dataset
+  - tree_{file_ID}.csv: plot of trajectory for visual evaluation
+
+### Tool #2: PAGA
+
+Code to run this tool is available in script PAGA.py
+
+Files used as input for this script should be in the same folder, data_dir, with filename structure "seurat_{file_ID}.h5ad" where file_ID is a unique identifier for that dataset
+
+Input: 
+  - data_dir: folder of h5ad files, one for each dataset, including raw counts from scRNA-seq and UMAP projection and clustering computed by Seurat
+  - file_list: vector of identifiers (file_IDs) for each file (section of file name that comes before ".h5ad" (if using my simulated data, keep file_list the same)
+  - out_dir: desired output folder path
+
+Output: 
+  - stats_{file_ID}.csv: time and memory usage statistics for each dataset
+  - pseudotime_{file_ID}.csv: pseudotime assignments for each dataset
+
+### Tool #3: Slingshot
+
+Code to run this tool is available in script slingshot.R
+
+Files used as input for this script should be in the same folder, data_dir, with filename structure "seurat_{file_ID}.rds" where file_ID is a unique identifier for that dataset
+
+Input: 
+  - data_dir: folder of .rds files, one for each dataset, including raw counts from scRNA-seq and UMAP projection and clustering collected in a Seurat object
+  - file_list: vector of identifiers (file_IDs) for each file (section of file name that comes before ".rds" (if using my simulated data, keep file_list the same)
+  - out_dir: desired output folder path
+
+Output: 
+  - stats_{file_ID}.csv: time and memory usage statistics for each dataset
+  - pseudotime_{file_ID}.csv: pseudotime assignments for each dataset
+
+## Generating Benchmarking Results 
+
+The following section is ordered according to the figures in my benchmarking paper results: 
+
+### Figure 1: Time and Space Complexity for Global Dropout Datasets: 
+
+This figure was generated using evaluation_code/time_space.R, with the following user settings: 
+
+```{r}
+
+#folder with monocle time and space statistics, with beginning prefix of all filenames with statistics
+monocle_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/monocle_DDR"
+monocle_prefix = "stats_"
+
+#folder with PAGA time and space statistics, with beginning prefix of all filenames with statistics
+PAGA_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/PAGA_umap"
+PAGA_prefix = "stats_"
+
+#folder with slingshot time and space statistics, with beginning prefix of all filenames with statistics
+Slingshot_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/slingshot_umap"
+Slingshot_prefix = "stats_"
+
+#do we want to look at global dropouts or cell-type-specific dropouts?
+check <- "global"
+
+#specify output folder
+out_dir <- "/home/estagaman/benchmarking_project/test_simulated_data/time_space_results"
+
+```
+
+Folders and output directory should be customized according to where you stored your results from initial runs of each tool. 
+
+The final plot for Figure 1 is called "time_space_global_default.png", located inside the specified output directory. 
+
+### Table 2: Space Complexity for Global Dropout Datasets 
+
+This information is calculated internally with the same script and settings as Figure 1, evaluation_code/time_space.R
+
+The final output file is called "time_space_global_default.csv", located inside the specified output directory. 
+
+The resulting metrics were manually transferred into the paper. 
 
 
+### Table 3: Memory Usage for Global Dropout Datasets 
+
+This information is contained in the same output file as Table 2, "time_space_global_default.csv", and generated with script evaluation_code/time_space.R. 
+
+Resulting metrics were manually transferred into the paper. 
+
+
+### Figure 2: Accuracy Measures in Global Dropout Datasets
+
+#### part a) generated using evaluation_code/pt_correlation.R, with the following user settings: 
+
+```{r}
+#Monocle-specify folder with results and prefix of files with pseudotime assignments
+monocle_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/monocle_DDR"
+monocle_prefix = "pseudotime_"
+
+#PAGA-specify folder with results and prefix of files with pseudotime assignments
+PAGA_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/PAGA_umap"
+PAGA_prefix = "pseudotime_"
+
+#Slingshot-specify folder with results and prefix of files with pseudotime assignments
+Slingshot_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/slingshot_umap"
+Slingshot_prefix = "pseudotime_"
+
+#do we want to look at global dropouts or cell-type-specific dropouts?
+check <- "global"
+
+#specify output folder to save results
+out_dir <- "/home/estagaman/benchmarking_project/test_simulated_data/correlation_results"
+
+#give path to seurat object with no dropouts added: 
+original_seurat_object_path <- "/home/estagaman/benchmarking_project/data/trajectory/with_DE_genes/seurat/seurat_1.rds"
+```
+
+Folders and output directory should be customized according to where you stored your results from initial runs of each tool. Parameter check should be set to "global" for global dropout datasets. 
+
+The final plot for Figure 2a is called "global_default_scatter.png", located inside the specified output directory.
+
+#### part b) generated using evaluation_code/prec_recall.R, with the following user settings: 
+
+```{r}
+#folder with monocle results, and beginning of filenames with differential expression results
+monocle_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/monocle_DDR"
+monocle_prefix = "pseudotime_DE"
+
+#folder with monocle results, and beginning of filenames with differential expression results
+PAGA_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/PAGA_umap"
+PAGA_prefix = "pseudotime_DE" #using the start vs end test
+
+#folder with monocle results, and beginning of filenames with differential expression results
+Slingshot_folder <- "/home/estagaman/benchmarking_project/test_simulated_data/slingshot_umap"
+Slingshot_prefix = "pseudotime_DE"
+
+#do we want to look at global dropouts or cell-type-specific dropouts?
+check <- "global"
+
+#do we want to use p-value or FDR-corrected p-value as the threshold?
+threshold <- "pvalue"
+
+#specify output folder
+out_dir <- "/home/estagaman/benchmarking_project/test_simulated_data/prec_recall_results"
+
+#provide a csv with a column of gene IDs and one column on whether the gene is truly differentially expressed
+DE_genes <- read.csv("/home/estagaman/benchmarking_project/data/trajectory/with_DE_genes/feature_info.csv")
+```
+
+Folders and output directory should be customized according to where you stored your results from initial runs of each tool. Parameter check should be set to "global" for global dropout datasets. 
+
+The final plot for Figure 2b is called "default_prec_recallglobal.png", located inside the specified output directory.
+
+### Figure 3: Accuracy Measures in Cell-Type-Specific Dropout Datasets
+
+#### part a) generated using evaluation_code/pt_correlation.R, with the following changes in settings from Figure 2: 
+
+```{r}
+#do we want to look at global dropouts or cell-type-specific dropouts?
+check <- "cell_type"
+
+```
+
+Parameter check should be set to "cell_type" for global dropout datasets. 
+
+The final plot for Figure 3a is called "cell_type_default_scatter.png", located inside the specified output directory.
+
+#### part b) generated using evaluation_code/prec_recall.R, with the following changes in settings from Figure 2: 
+
+```{r}
+#do we want to look at global dropouts or cell-type-specific dropouts?
+check <- "cell_type"
+
+```
+
+Parameter check should be set to "cell_type" for global dropout datasets. 
+
+The final plot for Figure 3b is called "default_prec_recallcell_type.png", located inside the specified output directory.
