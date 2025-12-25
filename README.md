@@ -37,7 +37,7 @@ Anaconda/Miniconda:
     * pandas
     * numpy
     * matplotlib
-    * scanpy (must be activated in conda environment to run PAGA)
+    * scanpy
     * scipy
     * time
     * os
